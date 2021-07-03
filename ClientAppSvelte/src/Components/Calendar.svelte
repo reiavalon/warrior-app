@@ -1,9 +1,18 @@
 <script type="ts">
+    import { createEventDispatcher } from "svelte";
+    import { DateToIsoProper } from "../Utilities/DateMethods";
+
+    const dispatch = createEventDispatcher();
+
     let dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     let monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
     export let selectedDate: Date = new Date();
     export let redDates: string[] = [];
+    export let yellowDates: string[] = [];
+    export let greenDates: string[] = [];
+
+    dispatch('dateChanged', { date: selectedDate });
 
     let currentMonth: number = selectedDate.getMonth();
     let currentYear: number = selectedDate.getFullYear();
@@ -21,9 +30,7 @@
     }
 
     function areDatesEqual(input1: Date, input2: Date) {
-        return (input1.getDate() == input2.getDate())
-            && (input1.getMonth() == input2.getMonth())
-            && (input1.getFullYear() == input2.getFullYear());
+        return DateToIsoProper(input1) === DateToIsoProper(input2);
     }
 
     function monthOffset(offset: number) {
@@ -33,14 +40,14 @@
         currentYear = tempDate.getFullYear();
     }
 
-    function getDateClass(input: Date, selectedDate: Date, redDates: string[]) {
+    function getDateClass(input: Date, selectedDate: Date, redDates: string[], yellowDates: string[], greenDates: string[]) {
         let output = "day";
         if(areDatesEqual(input, new Date())) { output += ' currentDate'; }
         if(areDatesEqual(input, selectedDate)) { output += ' selectedDate'; }
         if(!isDateWithinCurrentRange(input)) { output += ' notRangeDate'; }
-        if(redDates.indexOf(input.toDateString()) !== -1) {
-            output += ' redDate';
-        }
+        if(redDates.indexOf(DateToIsoProper(input)) !== -1) { output += ' redDate'; }
+        if(yellowDates.indexOf(DateToIsoProper(input)) !== -1) { output += ' yellowDate'; }
+        if(greenDates.indexOf(DateToIsoProper(input)) !== -1) { output += ' greenDate'; }
         return output;
     }
 
@@ -97,11 +104,17 @@
             curDate = getDateFromDayOffset(curDate, 1);
         }
     }
+
+    function onDateSelected(newDate: Date) {
+        if(!areDatesEqual(selectedDate, newDate)) {
+            selectedDate = newDate;
+            dispatch('dateChanged', { date: selectedDate });
+        }
+    }
 </script>
 
 <div>
     <div class="calendar">
-        <div class="selectedDateTitle">{selectedDateString}</div>
         <div class="currentDateTitleContainer">
             <div class="monthChangeButton" on:click={() => monthOffset(-1)}> ◀ </div>
             <div class="currentDateTitle">{currentMonthString} {currentYearString}</div>
@@ -115,7 +128,7 @@
         {#each dateArray as week}
         <div class="week">
             {#each week as day}
-                <div class={ getDateClass(day, selectedDate, redDates) } on:click={() => { selectedDate = day; } }>
+                <div class={ getDateClass(day, selectedDate, redDates, yellowDates, greenDates) } on:click={() => { onDateSelected(day); } }>
                     {day.getDate()}
                 </div>
             {/each}
@@ -180,18 +193,18 @@
         cursor: pointer;
     }
 
-    .fullDate {
+    .week-label {
+        font-weight: bold;
+    }
+
+    .greenDate {
         background: green;
         color: white;
     }
-    
-    .partialDate {
-        background: goldenrod;
-        color: black;
-    }
 
-    .week-label {
-        font-weight: bold;
+    .yellowDate {
+        background: goldenrod;
+        color: white;
     }
 
     .redDate {
