@@ -1,0 +1,8 @@
+obj
+bin
+wwwroot/build
+Migrations
+.vs
+.vscode
+dist
+*.db
